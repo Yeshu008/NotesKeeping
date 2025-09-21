@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8
+    container_name: notes-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: notesapp
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+  backend:
+    build: .
+    container_name: notes-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLASK_APP: run.py
+      FLASK_ENV: production
+      DATABASE_URL: mysql+pymysql://root:password@db:3306/notesapp
+      JWT_SECRET_KEY: your-secret-key
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
